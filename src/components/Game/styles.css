@@ -1,0 +1,27 @@
+.options-container {
+  margin-bottom: 2rem;
+}
+
+table {
+  margin: 0 auto 20px auto;
+  border-collapse: collapse;
+  background-color: black;
+}
+
+td {
+  width: 10px;
+  height: 10px;
+  border: 1px solid darkgray;
+}
+
+.alive {
+  background-color: white;
+}
+
+.alive:hover {
+  background-color: red;
+}
+
+.dead:hover {
+  background-color: darkgray;
+}
