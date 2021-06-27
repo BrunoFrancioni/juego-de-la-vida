@@ -299,19 +299,27 @@ const Game = () => {
         setStates(newGrid);
     }
 
+    /* Funcion que maneja el cambio de estado del speed */
     const handleChangeSlider = (value: string) => {
         setSpeed(Number(value));
         prevSpeed.current = Number(value);
     }
 
+    /* Funcion que maneja el cambio del estado del 
+        numero de filas */
     const handleChangeRows = (value: string) => {
         setNumRows(Number(value));
     }
 
+    /* Funcion que maneja el cambio de estado del
+        numero de columnas */
     const handleChangeCols = (value: string) => {
         setNumCols(Number(value));
     }
 
+    /* Funcion que se encagar de solicitar una nueva tabla
+        a partir de los nuevos valores de columnas y 
+        filas */
     const handleSaveValuesColsRows = (e: React.SyntheticEvent) => {
         e.preventDefault();
 
