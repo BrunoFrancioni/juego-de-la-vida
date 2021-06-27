@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 /**
     Para ir actualizando los estados de la tabla utilizo la libreria immer.
     Trate de actualizar el estado de la tabla con una funcion normal, pero
@@ -18,6 +18,7 @@ import React, { useCallback, useRef, useState } from "react";
 import produce from "immer";
 
 import './styles.css';
+import Swal from "sweetalert2";
 
 const Game = () => {
     /* Variable para guardar la cantidad de filas actuales */
@@ -66,6 +67,51 @@ const Game = () => {
     /* Referencia para poder utilizar luego la velocidad cuando corre el algoritmo */
     const prevSpeed = useRef(speed);
     prevSpeed.current = speed;
+
+    /* Cuando inicia la apliaciacion, verifico si existe una partida guardada */
+    useEffect(() => {
+        if (localStorage.getItem('states')) {
+            Swal.fire({
+                title: 'Existe una partida guardada',
+                text: '¿Desea seguir con la partida?',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Si',
+                cancelButtonText: 'No'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let states = localStorage.getItem('states')
+                    if (states) setStates(JSON.parse(states));
+
+                    let numCols = localStorage.getItem('numCols');
+                    if (numCols) setNumCols(Number(numCols));
+
+                    let numRows = localStorage.getItem('numRows');
+                    if (numRows) setNumRows(Number(numRows));
+
+                    let generation = localStorage.getItem('generation');
+                    if (generation) setGeneration(Number(generation));
+
+                    let speed = localStorage.getItem('speed');
+                    if (speed) setSpeed(Number(speed));
+
+                    Swal.fire(
+                        'Importada!',
+                        'Su partida ha sido importada correctamente',
+                        'success'
+                    );
+                } else {
+                    localStorage.removeItem('states');
+                    localStorage.removeItem('numCols');
+                    localStorage.removeItem('numRows');
+                    localStorage.removeItem('generation');
+                    localStorage.removeItem('speed');
+                }
+            });
+        }
+    }, [])
 
     /* Funcion que genera una nueva matriz para el primer estado cuando se inicializa
         el algoritmo. Genera valores random y asi puedo generar la primer matriz 
@@ -326,6 +372,33 @@ const Game = () => {
         generateNewState();
     }
 
+    /* Funcion que se encarga de guardar la partida */
+    const saveMatch = () => {
+        Swal.fire({
+            title: '¿Seguro que desea guardar la partida?',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Si, guardar!',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.setItem('numCols', String(numCols));
+                localStorage.setItem('numRows', String(numRows));
+                localStorage.setItem('generation', String(generation));
+                localStorage.setItem('speed', String(speed));
+                localStorage.setItem('states', JSON.stringify(states));
+
+                Swal.fire(
+                    'Guardada!',
+                    'Su partida ha sido guardada',
+                    'success'
+                );
+            }
+        });
+    }
+
     return (
         <>
             <div className="columns is-vcentered options-container">
@@ -368,6 +441,16 @@ const Game = () => {
                                 disabled={running || generation === 0}
                             >
                                 Reiniciar
+                            </button>
+                        </div>
+
+                        <div className="column">
+                            <button
+                                className="button is-link"
+                                onClick={() => saveMatch()}
+                                disabled={running || generation === 0}
+                            >
+                                Guardar Partida
                             </button>
                         </div>
                     </div>
