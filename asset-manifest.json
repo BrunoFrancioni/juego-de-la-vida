@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.css": "/juego-de-la-vida/static/css/main.9598119a.chunk.css",
+    "main.js": "/juego-de-la-vida/static/js/main.e9b4c221.chunk.js",
+    "main.js.map": "/juego-de-la-vida/static/js/main.e9b4c221.chunk.js.map",
+    "runtime-main.js": "/juego-de-la-vida/static/js/runtime-main.e3207522.js",
+    "runtime-main.js.map": "/juego-de-la-vida/static/js/runtime-main.e3207522.js.map",
+    "static/css/2.ec1cce44.chunk.css": "/juego-de-la-vida/static/css/2.ec1cce44.chunk.css",
+    "static/js/2.c2a9f765.chunk.js": "/juego-de-la-vida/static/js/2.c2a9f765.chunk.js",
+    "static/js/2.c2a9f765.chunk.js.map": "/juego-de-la-vida/static/js/2.c2a9f765.chunk.js.map",
+    "static/js/3.7503e43c.chunk.js": "/juego-de-la-vida/static/js/3.7503e43c.chunk.js",
+    "static/js/3.7503e43c.chunk.js.map": "/juego-de-la-vida/static/js/3.7503e43c.chunk.js.map",
+    "index.html": "/juego-de-la-vida/index.html",
+    "static/css/2.ec1cce44.chunk.css.map": "/juego-de-la-vida/static/css/2.ec1cce44.chunk.css.map",
+    "static/css/main.9598119a.chunk.css.map": "/juego-de-la-vida/static/css/main.9598119a.chunk.css.map",
+    "static/js/2.c2a9f765.chunk.js.LICENSE.txt": "/juego-de-la-vida/static/js/2.c2a9f765.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.e3207522.js",
+    "static/css/2.ec1cce44.chunk.css",
+    "static/js/2.c2a9f765.chunk.js",
+    "static/css/main.9598119a.chunk.css",
+    "static/js/main.e9b4c221.chunk.js"
+  ]
+}
