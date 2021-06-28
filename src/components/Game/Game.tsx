@@ -19,6 +19,7 @@ import produce from "immer";
 
 import './styles.css';
 import Swal from "sweetalert2";
+import GenerateTableModal from "../Modals/GenerateTableModal/GenerateTableModal";
 
 const Game = () => {
     /* Variable para guardar la cantidad de filas actuales */
@@ -68,6 +69,13 @@ const Game = () => {
     const prevSpeed = useRef(speed);
     prevSpeed.current = speed;
 
+    /* Variabla para controlar si mostrar el modal para generar un patron para la tabla */
+    const [showModal, setShowModal] = useState<boolean>(false);
+
+    /* Variabla para saber si el patron actual fue importado o no. En caso de haber sido
+        importado, no se genera un nuevo patron */
+    const [patternImported, setPatternImported] = useState<boolean>(false);
+
     /* Cuando inicia la apliaciacion, verifico si existe una partida guardada */
     useEffect(() => {
         if (localStorage.getItem('states')) {
@@ -97,11 +105,14 @@ const Game = () => {
                     let speed = localStorage.getItem('speed');
                     if (speed) setSpeed(Number(speed));
 
-                    Swal.fire(
-                        'Importada!',
-                        'Su partida ha sido importada correctamente',
-                        'success'
-                    );
+                    Swal.fire({
+                        position: 'bottom-end',
+                        icon: 'success',
+                        title: 'Importada!',
+                        text: 'Su partida ha sido importada correctamente',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
                 } else {
                     localStorage.removeItem('states');
                     localStorage.removeItem('numCols');
@@ -147,65 +158,34 @@ const Game = () => {
             return;
         }
 
-        /* Defino las operaciones que voy a tener que utilizar cuando quiera
-            que se actualice la tabla calculando los nuevos valores */
-        const operations = [
-            [0, 1],
-            [0, -1],
-            [1, -1],
-            [-1, 1],
-            [1, 1],
-            [-1, -1],
-            [1, 0],
-            [-1, 0]
-        ];
-
         setStates(s => {
             /* Dejo que la asignacion la haga immer a traves del metodo produce */
             return produce(s, tableCopy => {
-                for (let i = 0; i < refRows.current; i++) {
-                    for (let k = 0; k < refCols.current; k++) {
-                        let neighbors = 0;
+                /** Funcion que se encarga de calcular el total de vecinos vivos de cada celda */
+                const amountTrueNeighbors = (r: number, c: number) => {
+                    const neighbors = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
 
-                        operations.forEach(([x, y]) => {
-                            /* Para cada una de las celdas, recorro las operaciones para acceder
-                                a los vecinos. Una vez que tengo los valores, comienzo a verificar
-                                los estados de cada uno para ver si sumo un vecino vivo o no */
-                            const newI = i + x;
-                            const newK = k + y;
+                    return neighbors.reduce((trueNeighbors, neighbor) => {
+                        const x = r + neighbor[0];
+                        const y = c + neighbor[1];
+                        const isNeighborOnBoard = (x >= 0 && x < refRows.current && y >= 0 && y < refCols.current);
+                        /* No es necesario contar mas de tres vecinos */
+                        if (trueNeighbors < 4 && isNeighborOnBoard && s[x][y]) {
+                            return trueNeighbors + 1;
+                        } else {
+                            return trueNeighbors;
+                        }
+                    }, 0);
+                };
 
-                            /* Primero verifico si el vecino esta por fuera de los limites de
-                                la matriz, en caso de que si verifico el valor del vecino que 
-                                corresponde del otro lado de la tabla */
-                            if (newI < 0 && newK < 0) {
-                                if (s[refRows.current - 1][refCols.current - 1]) neighbors += 1;
-                            } else if (newK < 0 && i >= 0 && i <= refRows.current - 1) {
-                                if (s[i][refCols.current - 1]) neighbors += 1;
-                            } else if (newI > refRows.current - 1 && newK < 0) {
-                                if (s[0][refCols.current - 1]) neighbors += 1;
-                            } else if (newI < 0 && newK >= 0 && newK <= refCols.current - 1) {
-                                if (s[refRows.current - 1][k]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && newI < 0) {
-                                if (s[refRows.current - 1][0]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && i >= 0 && i <= refRows.current - 1) {
-                                if (s[i][0]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && newI > refRows.current - 1) {
-                                if (s[0][0]) neighbors += 1;
-                            } else if (newI > refRows.current - 1 && newK >= 0 && newK <= refCols.current - 1) {
-                                if (s[0][k]) neighbors += 1;
-                            } else {
-                                /* Por último, si el valor se encuentra dentro de los límites
-                                    de la matriz actual, simplemente verifico su estado */
-                                if (s[newI][newK]) neighbors += 1;
-                            }
-                        });
+                for (let r = 0; r < refRows.current; r++) {
+                    for (let c = 0; c < refCols.current; c++) {
+                        const totalTrueNeighbors = amountTrueNeighbors(r, c);
 
-                        /* Si tiene menos de 2 vecinos o mas de 3, la celda muere */
-                        if (neighbors < 2 || neighbors > 3) {
-                            tableCopy[i][k] = false;
-                        } else if (s[i][k] === false && neighbors === 3) {
-                            /** En caso de estar la celda muerta y tener 3 vecinos, nace */
-                            tableCopy[i][k] = true;
+                        if (!s[r][c]) {
+                            if (totalTrueNeighbors === 3) tableCopy[r][c] = true;
+                        } else {
+                            if (totalTrueNeighbors < 2 || totalTrueNeighbors > 3) tableCopy[r][c] = false;
                         }
                     }
                 }
@@ -226,7 +206,7 @@ const Game = () => {
     /* Funcion para iniciar o parar la ejecucion del algoritmo */
     const startStop = () => {
         /* En caso que estemos comenzando la ejecucion, generamos un estado para la tabla */
-        if (generation === 0) {
+        if (generation === 0 && !patternImported) {
             generateNewState();
         }
 
@@ -241,67 +221,37 @@ const Game = () => {
         }
     }
 
+    /* Funcion para generar el nuevo estado de la tabla que solo corre una vez */
     const runStep = useCallback(() => {
-        /* Defino las operaciones que voy a tener que utilizar cuando quiera
-            que se actualice la tabla calculando los nuevos valores */
-        const operations = [
-            [0, 1],
-            [0, -1],
-            [1, -1],
-            [-1, 1],
-            [1, 1],
-            [-1, -1],
-            [1, 0],
-            [-1, 0]
-        ];
-
         /* Genero el nuevo estado de la tabla */
         setStates(s => {
             /* Dejo que la asignacion la haga immer a traves del metodo produce */
             return produce(s, tableCopy => {
-                for (let i = 0; i < refRows.current; i++) {
-                    for (let k = 0; k < refCols.current; k++) {
-                        let neighbors = 0;
+                /** Funcion que se encarga de calcular el total de vecinos vivos de cada celda */
+                const amountTrueNeighbors = (r: number, c: number) => {
+                    const neighbors = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
 
-                        operations.forEach(([x, y]) => {
-                            /* Para cada una de las celdas, recorro las operaciones para acceder
-                                a los vecinos. Una vez que tengo los valores, comienzo a verificar
-                                los estados de cada uno para ver si sumo un vecino vivo o no */
-                            const newI = i + x;
-                            const newK = k + y;
+                    return neighbors.reduce((trueNeighbors, neighbor) => {
+                        const x = r + neighbor[0];
+                        const y = c + neighbor[1];
+                        const isNeighborOnBoard = (x >= 0 && x < refRows.current && y >= 0 && y < refCols.current);
+                        /* No es necesario contar mas de tres vecinos */
+                        if (trueNeighbors < 4 && isNeighborOnBoard && s[x][y]) {
+                            return trueNeighbors + 1;
+                        } else {
+                            return trueNeighbors;
+                        }
+                    }, 0);
+                };
 
-                            /* Primero verifico si el vecino esta por fuera de los limites de
-                                la matriz, en caso de que si verifico el valor del vecino que 
-                                corresponde del otro lado de la tabla */
-                            if (newI < 0 && newK < 0) {
-                                if (s[refRows.current - 1][refCols.current - 1]) neighbors += 1;
-                            } else if (newK < 0 && i >= 0 && i <= refRows.current - 1) {
-                                if (s[i][refCols.current - 1]) neighbors += 1;
-                            } else if (newI > refRows.current - 1 && newK < 0) {
-                                if (s[0][refCols.current - 1]) neighbors += 1;
-                            } else if (newI < 0 && newK >= 0 && newK <= refCols.current - 1) {
-                                if (s[refRows.current - 1][k]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && newI < 0) {
-                                if (s[refRows.current - 1][0]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && i >= 0 && i <= refRows.current - 1) {
-                                if (s[i][0]) neighbors += 1;
-                            } else if (newK > refCols.current - 1 && newI > refRows.current - 1) {
-                                if (s[0][0]) neighbors += 1;
-                            } else if (newI > refRows.current - 1 && newK >= 0 && newK <= refCols.current - 1) {
-                                if (s[0][k]) neighbors += 1;
-                            } else {
-                                /* Por último, si el valor se encuentra dentro de los límites
-                                    de la matriz actual, simplemente verifico su estado */
-                                if (s[newI][newK]) neighbors += 1;
-                            }
-                        });
+                for (let r = 0; r < refRows.current; r++) {
+                    for (let c = 0; c < refCols.current; c++) {
+                        const totalTrueNeighbors = amountTrueNeighbors(r, c);
 
-                        /* Si tiene menos de 2 vecinos o mas de 3, la celda muere */
-                        if (neighbors < 2 || neighbors > 3) {
-                            tableCopy[i][k] = false;
-                        } else if (s[i][k] === false && neighbors === 3) {
-                            /** En caso de estar la celda muerta y tener 3 vecinos, nace */
-                            tableCopy[i][k] = true;
+                        if (!s[r][c]) {
+                            if (totalTrueNeighbors === 3) tableCopy[r][c] = true;
+                        } else {
+                            if (totalTrueNeighbors < 2 || totalTrueNeighbors > 3) tableCopy[r][c] = false;
                         }
                     }
                 }
@@ -319,7 +269,7 @@ const Game = () => {
     /* Funcion para generar el siguiente paso */
     const step = () => {
         /* En caso que estemos comenzando la ejecucion, generamos un estado para la tabla */
-        if (generation === 0) {
+        if (generation === 0 && !patternImported) {
             generateNewState();
         }
 
@@ -329,6 +279,7 @@ const Game = () => {
 
     /* Función para reiniciarl os estados al inicio */
     const restart = () => {
+        setPatternImported(false);
         setRunning(false);
         setGeneration(0);
         setStates(() => {
@@ -390,12 +341,35 @@ const Game = () => {
                 localStorage.setItem('speed', String(speed));
                 localStorage.setItem('states', JSON.stringify(states));
 
-                Swal.fire(
-                    'Guardada!',
-                    'Su partida ha sido guardada',
-                    'success'
-                );
+                Swal.fire({
+                    position: 'bottom-end',
+                    icon: 'success',
+                    title: 'Guardada!',
+                    text: 'Su partida ha sido guardada',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
             }
+        });
+    }
+
+    /* Funcion que toma el patron que envia el modal y lo guarda */
+    const saveNewPattern = (numRows: number, numCols: number, table: Array<Array<boolean>>) => {
+        setNumRows(numRows);
+        setNumCols(numCols);
+        setStates(table);
+        setGeneration(0);
+        setSpeed(300);
+        setPatternImported(true);
+
+        setShowModal(false);
+
+        Swal.fire({
+            position: 'bottom-end',
+            icon: 'success',
+            title: 'Patron importado correctamente',
+            showConfirmButton: false,
+            timer: 1500
         });
     }
 
@@ -451,6 +425,16 @@ const Game = () => {
                                 disabled={running || generation === 0}
                             >
                                 Guardar Partida
+                            </button>
+                        </div>
+
+                        <div className="column">
+                            <button
+                                className="button is-link"
+                                onClick={() => setShowModal(true)}
+                                disabled={running}
+                            >
+                                Generar tabla
                             </button>
                         </div>
                     </div>
@@ -558,6 +542,16 @@ const Game = () => {
                     </tbody>
                 </table>
             </div>
+
+            {
+                showModal &&
+                <GenerateTableModal
+                    showModal={showModal}
+                    handleClose={() => setShowModal(false)}
+                    savePattern={(numRows: number, numCols: number, table: Array<Array<boolean>>) =>
+                        saveNewPattern(numRows, numCols, table)}
+                />
+            }
         </>
     );
 }

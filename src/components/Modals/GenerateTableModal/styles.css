@@ -1,0 +1,11 @@
+.alive {
+    background-color: white;
+}
+
+.alive:hover {
+    background-color: red;
+}
+
+.dead:hover {
+    background-color: darkgray;
+}

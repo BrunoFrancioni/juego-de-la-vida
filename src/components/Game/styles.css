@@ -26,6 +26,10 @@ td {
   background-color: red;
 }
 
+.deade {
+  background-color: black;
+}
+
 .dead:hover {
   background-color: darkgray;
 }
