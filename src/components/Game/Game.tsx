@@ -158,34 +158,65 @@ const Game = () => {
             return;
         }
 
+        /* Defino las operaciones que voy a tener que utilizar cuando quiera
+            que se actualice la tabla calculando los nuevos valores */
+        const operations = [
+            [0, 1],
+            [0, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
+            [-1, -1],
+            [1, 0],
+            [-1, 0]
+        ];
+
         setStates(s => {
             /* Dejo que la asignacion la haga immer a traves del metodo produce */
             return produce(s, tableCopy => {
-                /** Funcion que se encarga de calcular el total de vecinos vivos de cada celda */
-                const amountTrueNeighbors = (r: number, c: number) => {
-                    const neighbors = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+                for (let i = 0; i < refRows.current; i++) {
+                    for (let k = 0; k < refCols.current; k++) {
+                        let neighbors = 0;
 
-                    return neighbors.reduce((trueNeighbors, neighbor) => {
-                        const x = r + neighbor[0];
-                        const y = c + neighbor[1];
-                        const isNeighborOnBoard = (x >= 0 && x < refRows.current && y >= 0 && y < refCols.current);
-                        /* No es necesario contar mas de tres vecinos */
-                        if (trueNeighbors < 4 && isNeighborOnBoard && s[x][y]) {
-                            return trueNeighbors + 1;
-                        } else {
-                            return trueNeighbors;
-                        }
-                    }, 0);
-                };
+                        operations.forEach(([x, y]) => {
+                            /* Para cada una de las celdas, recorro las operaciones para acceder
+                                a los vecinos. Una vez que tengo los valores, comienzo a verificar
+                                los estados de cada uno para ver si sumo un vecino vivo o no */
+                            const newI = i + x;
+                            const newK = k + y;
 
-                for (let r = 0; r < refRows.current; r++) {
-                    for (let c = 0; c < refCols.current; c++) {
-                        const totalTrueNeighbors = amountTrueNeighbors(r, c);
+                            /* Primero verifico si el vecino esta por fuera de los limites de
+                                la matriz, en caso de que si verifico el valor del vecino que 
+                                corresponde del otro lado de la tabla */
+                            if (newI < 0 && newK < 0) {
+                                if (s[refRows.current - 1][refCols.current - 1]) neighbors += 1;
+                            } else if (newK < 0 && i >= 0 && i <= refRows.current - 1) {
+                                if (s[i][refCols.current - 1]) neighbors += 1;
+                            } else if (newI > refRows.current - 1 && newK < 0) {
+                                if (s[0][refCols.current - 1]) neighbors += 1;
+                            } else if (newI < 0 && newK >= 0 && newK <= refCols.current - 1) {
+                                if (s[refRows.current - 1][k]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && newI < 0) {
+                                if (s[refRows.current - 1][0]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && i >= 0 && i <= refRows.current - 1) {
+                                if (s[i][0]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && newI > refRows.current - 1) {
+                                if (s[0][0]) neighbors += 1;
+                            } else if (newI > refRows.current - 1 && newK >= 0 && newK <= refCols.current - 1) {
+                                if (s[0][k]) neighbors += 1;
+                            } else {
+                                /* Por último, si el valor se encuentra dentro de los límites
+                                    de la matriz actual, simplemente verifico su estado */
+                                if (s[newI][newK]) neighbors += 1;
+                            }
+                        });
 
-                        if (!s[r][c]) {
-                            if (totalTrueNeighbors === 3) tableCopy[r][c] = true;
-                        } else {
-                            if (totalTrueNeighbors < 2 || totalTrueNeighbors > 3) tableCopy[r][c] = false;
+                        /* Si tiene menos de 2 vecinos o mas de 3, la celda muere */
+                        if (neighbors < 2 || neighbors > 3) {
+                            tableCopy[i][k] = false;
+                        } else if (s[i][k] === false && neighbors === 3) {
+                            /** En caso de estar la celda muerta y tener 3 vecinos, nace */
+                            tableCopy[i][k] = true;
                         }
                     }
                 }
@@ -223,35 +254,66 @@ const Game = () => {
 
     /* Funcion para generar el nuevo estado de la tabla que solo corre una vez */
     const runStep = useCallback(() => {
+        /* Defino las operaciones que voy a tener que utilizar cuando quiera
+            que se actualice la tabla calculando los nuevos valores */
+        const operations = [
+            [0, 1],
+            [0, -1],
+            [1, -1],
+            [-1, 1],
+            [1, 1],
+            [-1, -1],
+            [1, 0],
+            [-1, 0]
+        ];
+
         /* Genero el nuevo estado de la tabla */
         setStates(s => {
             /* Dejo que la asignacion la haga immer a traves del metodo produce */
             return produce(s, tableCopy => {
-                /** Funcion que se encarga de calcular el total de vecinos vivos de cada celda */
-                const amountTrueNeighbors = (r: number, c: number) => {
-                    const neighbors = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+                for (let i = 0; i < refRows.current; i++) {
+                    for (let k = 0; k < refCols.current; k++) {
+                        let neighbors = 0;
 
-                    return neighbors.reduce((trueNeighbors, neighbor) => {
-                        const x = r + neighbor[0];
-                        const y = c + neighbor[1];
-                        const isNeighborOnBoard = (x >= 0 && x < refRows.current && y >= 0 && y < refCols.current);
-                        /* No es necesario contar mas de tres vecinos */
-                        if (trueNeighbors < 4 && isNeighborOnBoard && s[x][y]) {
-                            return trueNeighbors + 1;
-                        } else {
-                            return trueNeighbors;
-                        }
-                    }, 0);
-                };
+                        operations.forEach(([x, y]) => {
+                            /* Para cada una de las celdas, recorro las operaciones para acceder
+                                a los vecinos. Una vez que tengo los valores, comienzo a verificar
+                                los estados de cada uno para ver si sumo un vecino vivo o no */
+                            const newI = i + x;
+                            const newK = k + y;
 
-                for (let r = 0; r < refRows.current; r++) {
-                    for (let c = 0; c < refCols.current; c++) {
-                        const totalTrueNeighbors = amountTrueNeighbors(r, c);
+                            /* Primero verifico si el vecino esta por fuera de los limites de
+                                la matriz, en caso de que si verifico el valor del vecino que 
+                                corresponde del otro lado de la tabla */
+                            if (newI < 0 && newK < 0) {
+                                if (s[refRows.current - 1][refCols.current - 1]) neighbors += 1;
+                            } else if (newK < 0 && i >= 0 && i <= refRows.current - 1) {
+                                if (s[i][refCols.current - 1]) neighbors += 1;
+                            } else if (newI > refRows.current - 1 && newK < 0) {
+                                if (s[0][refCols.current - 1]) neighbors += 1;
+                            } else if (newI < 0 && newK >= 0 && newK <= refCols.current - 1) {
+                                if (s[refRows.current - 1][k]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && newI < 0) {
+                                if (s[refRows.current - 1][0]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && i >= 0 && i <= refRows.current - 1) {
+                                if (s[i][0]) neighbors += 1;
+                            } else if (newK > refCols.current - 1 && newI > refRows.current - 1) {
+                                if (s[0][0]) neighbors += 1;
+                            } else if (newI > refRows.current - 1 && newK >= 0 && newK <= refCols.current - 1) {
+                                if (s[0][k]) neighbors += 1;
+                            } else {
+                                /* Por último, si el valor se encuentra dentro de los límites
+                                    de la matriz actual, simplemente verifico su estado */
+                                if (s[newI][newK]) neighbors += 1;
+                            }
+                        });
 
-                        if (!s[r][c]) {
-                            if (totalTrueNeighbors === 3) tableCopy[r][c] = true;
-                        } else {
-                            if (totalTrueNeighbors < 2 || totalTrueNeighbors > 3) tableCopy[r][c] = false;
+                        /* Si tiene menos de 2 vecinos o mas de 3, la celda muere */
+                        if (neighbors < 2 || neighbors > 3) {
+                            tableCopy[i][k] = false;
+                        } else if (s[i][k] === false && neighbors === 3) {
+                            /** En caso de estar la celda muerta y tener 3 vecinos, nace */
+                            tableCopy[i][k] = true;
                         }
                     }
                 }
